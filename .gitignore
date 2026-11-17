@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.venv/
+split_output/
+# never commit catalog data
+*.xlsx
+*.xlsm
+*.csv
