@@ -2,7 +2,18 @@
 
 Splits a marketplace masterfile (.xlsx) into **Complete** and **Incomplete** SKUs. It's been built for the Mirakl-style Tesco UK and Macy's templates. It runs as a Streamlit web app (`app.py`) or from the command line (`split_masterfile.py`). The splitting engine uses only the Python standard library.
 
-## How it decides
+## Marketplaces
+
+The app opens with a **Marketplace** dropdown. Each marketplace has its own splitting logic.
+
+| Marketplace | Status |
+|---|---|
+| Mirakl (e.g. Tesco UK, Macy's) | Built, using the logic described below |
+| Bol, cDiscount, Zalando, Allegro, OTTO, eBay, TikTok, Noon, Walmart US, Walmart CA, Target, Mercado Libre | In the dropdown, logic not built yet |
+
+The marketplace list is at the top of `app.py`. To build one, write its splitter function and set it as that marketplace's `splitter` in `MARKETPLACES`. Until then the app shows "not built yet" for it.
+
+## How it decides (Mirakl)
 
 - **Mandatory means red.** The templates paint a cell red when that attribute is mandatory for the SKU's category. They do this with a conditional-formatting rule that looks up the category in the `Columns` sheet. The tool reads that rule from the workbook, so it marks exactly the cells Excel shows in red, row by row.
 - **Complete** means every red cell in the row has something in it. **Incomplete** means at least one red cell is blank.

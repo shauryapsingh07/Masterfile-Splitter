@@ -13,20 +13,45 @@ from split_masterfile import output_names, split_workbook
 
 st.set_page_config(page_title="Masterfile Splitter", page_icon="📑", layout="wide")
 
+# Marketplaces shown in the dropdown.
+#   splitter: the function that splits that marketplace's file (None = not built yet).
+#   note:     one line shown under the dropdown.
+# To add a marketplace, add an entry here; to give it logic, point "splitter" at its function.
+MARKETPLACES = {
+    "Mirakl": {
+        "splitter": split_workbook,
+        "note": "Mirakl templates (e.g. Tesco UK, Macy's). Mandatory = cells highlighted in red "
+                "for the SKU's category, read from the template's Columns sheet.",
+    },
+}
+# Marketplaces whose logic is still to be built: shown in the dropdown as "not built yet".
+for _name in ["Bol", "cDiscount", "Zalando", "Allegro", "OTTO", "eBay", "TikTok", "Noon",
+              "Walmart US", "Walmart CA", "Target", "Mercado Libre"]:
+    MARKETPLACES.setdefault(_name, {"splitter": None, "note": f"{_name} masterfile template."})
+
 
 @st.cache_data(show_spinner=False, max_entries=20)
-def run_split(data: bytes, name: str):
-    return split_workbook(io.BytesIO(data), name)
+def run_split(marketplace: str, data: bytes, name: str):
+    return MARKETPLACES[marketplace]["splitter"](io.BytesIO(data), name)
 
 
 st.title("Masterfile Splitter")
+
+marketplace = st.selectbox("Marketplace", list(MARKETPLACES))
+config = MARKETPLACES[marketplace]
+st.caption(config["note"])
+if config["splitter"] is None:
+    st.warning(f"The splitting logic for **{marketplace}** hasn't been built yet.")
+    st.stop()
+
 st.write(
     "Upload one or more masterfiles. Each SKU is checked against the cells the template "
     "highlights in **red** (mandatory for that SKU's category). A SKU is **Complete** when "
     "every red cell has a value. Values are never judged or changed, and any non-blank entry counts as filled."
 )
 
-files = st.file_uploader("Masterfiles (.xlsx)", type=["xlsx", "xlsm"], accept_multiple_files=True)
+files = st.file_uploader("Masterfiles (.xlsx)", type=["xlsx", "xlsm"], accept_multiple_files=True,
+                         key=f"files-{marketplace}")
 
 if not files:
     st.info("Waiting for files. Your template structure, formatting, dropdowns and macros are kept unchanged.")
@@ -36,7 +61,7 @@ results = []
 for f in files:
     with st.spinner(f"Splitting {f.name} ..."):
         try:
-            results.append(run_split(f.getvalue(), f.name))
+            results.append(run_split(marketplace, f.getvalue(), f.name))
         except Exception as e:  # show the problem, keep going with the other files
             st.error(f"**{f.name}** could not be split: {e}")
 
